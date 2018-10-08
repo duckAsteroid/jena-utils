@@ -16,3 +16,4 @@ gradle-app.setting
 # Don't track IntelliJ stuff
 *.iml
 /.idea
+/out/
