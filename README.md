@@ -4,7 +4,7 @@ Utility classes for working with Apache Jena
 
 Getting Started
 ---------------
-EDIT ME
+Stuff
 
 Download
 -----------
