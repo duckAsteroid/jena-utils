@@ -18,6 +18,6 @@ A basic Java application using:
  * SonarQube - Code quality and test coverage
  * Bintray - Hosts binary releases (Maven2 repo)
 
-![Build status](https://travis-ci.org/duckAsteroid/basic-template.svg?branch=master)
+![Build status](https://travis-ci.org/duckAsteroid/jena-utils.svg?branch=master)
 
 
