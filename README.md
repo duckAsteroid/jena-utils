@@ -2,6 +2,16 @@ jena-utils
 ===========
 Utility classes for working with Apache Jena
 
+Getting Started
+---------------
+EDIT ME
+
+Download
+-----------
+This project is available via Maven repo at: https://dl.bintray.com/duck-asteroid/maven/
+
+Build Process
+-------------
 A basic Java application using:
  * Gradle - Build is managed by Gradle
  * Travis-CI - Continuous integration build server
@@ -10,12 +20,4 @@ A basic Java application using:
 
 ![Build status](https://travis-ci.org/duckAsteroid/basic-template.svg?branch=master)
 
-Getting Started
----------------
-
-EDIT ME
-
-Download
------------
-This project is available via Maven repo at: https://dl.bintray.com/duck-asteroid/maven/
 
