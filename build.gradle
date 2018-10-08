@@ -1,0 +1,58 @@
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+    id "org.sonarqube" version "2.5"
+}
+
+/* Java basics */
+apply plugin: 'java'
+group = 'com.asteroid.duck'
+version = '1.0.0'
+description = 'Utility classes for working with Apache Jena'
+
+sourceCompatibility = 1.8
+
+// workaround for sonarqube plugin issue in Gradle 4
+sourceSets.main.output.classesDir = new File(buildDir, "classes/main")
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'org.apache.jena:jena-core:3.4.0'
+    compile 'org.apache.jena:jena-arq:3.4.0'
+
+    testCompile 'junit:junit:4.+'
+    testCompile 'org.mockito:mockito-all:1.10.19'
+    testRuntime 'ch.qos.logback:logback-classic:1.2.3'
+}
+
+
+/* Add ability to publish JARs to Maven (e.g. bintray) */
+apply plugin: 'maven-publish'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+
+/* Configuration to publish from travis to bintray */
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    publications = ['mavenJava'] // reference above publication
+    publish = true // Whether version should be auto published after an upload    
+    override = true // Whether to override version artifacts already published
+    pkg {
+        name = 'basic-template' // < - EDIT ME
+        repo = 'maven'
+        userOrg = 'duck-asteroid'
+        licenses = ['MIT']
+        vcsUrl = 'https://github.com/duckAsteroid/basic-template.git' // < - EDIT ME
+    }
+}
