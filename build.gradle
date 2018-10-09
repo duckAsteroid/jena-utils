@@ -49,10 +49,10 @@ bintray {
     publish = true // Whether version should be auto published after an upload    
     override = true // Whether to override version artifacts already published
     pkg {
-        name = 'basic-template' // < - EDIT ME
+        name = 'jena-utils' // < - EDIT ME
         repo = 'maven'
         userOrg = 'duck-asteroid'
         licenses = ['MIT']
-        vcsUrl = 'https://github.com/duckAsteroid/basic-template.git' // < - EDIT ME
+        vcsUrl = 'https://github.com/duckAsteroid/jena-utils.git' // < - EDIT ME
     }
 }
