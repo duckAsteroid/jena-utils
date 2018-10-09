@@ -1,5 +1,5 @@
 plugins {
-    id "com.jfrog.bintray" version "1.7.3"
+    id "com.jfrog.bintray" version "1.+"
     id "org.sonarqube" version "2.5"
 }
 
@@ -54,5 +54,9 @@ bintray {
         userOrg = 'duck-asteroid'
         licenses = ['MIT']
         vcsUrl = 'https://github.com/duckAsteroid/jena-utils.git' // < - EDIT ME
+        version {
+            name = '1.0.0'
+            released = new Date()
+        }
     }
 }
