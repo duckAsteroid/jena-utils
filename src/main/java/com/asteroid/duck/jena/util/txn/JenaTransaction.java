@@ -6,6 +6,7 @@ import org.apache.jena.query.ReadWrite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
@@ -32,29 +33,72 @@ public abstract class JenaTransaction implements AutoCloseable {
          * @return some value to calling code
          * @throws Exception If anything bad happens
          */
-        V call(JenaTransaction txn) throws Exception;
+        V call(JenaTransaction txn);
     }
 
     /**
-     * A helper method to run a {@link Callable} inside a transaction. This method takes care of {@link #begin(Dataset, ReadWrite)}
+     * A helper method to run a {@link Callable} inside a {@link ReadWrite#READ} transaction. This method takes care of {@link #begin(Dataset, ReadWrite)}
      * and {@link #end()}. The rest is up to you...
-     * @param function the function to run inside transaction
+     * @param function the function to run inside a {@link ReadWrite#READ} transaction
      * @param d the dataset for the transaction
-     * @param mode the transaction mode
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function
-     * @throws Exception If there is a problem running the function. Note: the transaction will always be {@link #end()}ed!
      */
-    public static <T> T runWith(final Callable<T> function, final Dataset d, final ReadWrite mode) throws Exception {
-        if (function != null) {
-            JenaTransaction txn = JenaTransaction.begin(d, mode);
+    public static <T> Optional<T> readWith(final Callable<T> function, final Dataset d) {
+        return runWith(txn -> {
             try {
-                return function.call();
-            } finally {
-                txn.end();
+                return Optional.ofNullable(function.call());
             }
-        }
-        return null;
+            catch (Exception e) {
+                LOG.error("Unhandled error while executing transaction", e);
+            }
+            return Optional.empty();
+        }, d, ReadWrite.READ);
+    }
+
+    /**
+     * A helper method to run inside a {@link Callable} inside a {@link ReadWrite#WRITE} transaction. This method takes care of {@link #begin(Dataset, ReadWrite)}
+     * and {@link #end()}.
+     *
+     * If you ask it, it will also {@link #commit()} the transaction when you are done (before it
+     * ends).
+     *
+     * NOTE: Any exceptions in the function will be swallowed and logged
+     *
+     * @param function the function to run inside a {@link ReadWrite#WRITE} transaction
+     * @param d the dataset for the transaction
+     * @param commitAfter should {@link #commit()} be called after the function has successfully run
+     * @param <T> the type returned by this method
+     * @return whatever is returned by the {@link Callable} function (if it ran succesfully)
+     */
+    public static <T> Optional<T> writeWith(final Callable<T> function, final Dataset d, final boolean commitAfter) {
+        return runWith(txn -> {
+            try {
+                T result = function.call();
+                if (commitAfter) {
+                    txn.commit();
+                }
+                return Optional.ofNullable(result);
+            }
+            catch (Exception e) {
+                LOG.error("Unhandled error while executing transaction", e);
+            }
+            return Optional.empty();
+        }, d, ReadWrite.WRITE);
+    }
+
+    /**
+     * A helper method to run inside a {@link Callable} inside a {@link ReadWrite#WRITE} transaction. This method takes
+     * care of {@link #begin(Dataset, ReadWrite)}, {@link #commit()} after your function completes (normally)
+     * and finally {@link #end()} (even if the function exits abnormally with an exception).
+     *
+     * @param function the function to run inside a {@link ReadWrite#WRITE} transaction
+     * @param d the dataset for the transaction
+     * @param <T> the type returned by this method
+     * @return whatever is returned by the {@link Callable} function (if there is no error)
+     */
+    public static <T> Optional<T> writeWithCommit(final Callable<T> function, final Dataset d) {
+        return writeWith(function, d, true);
     }
 
     /**
@@ -62,15 +106,16 @@ public abstract class JenaTransaction implements AutoCloseable {
      * This method takes care of {@link #begin(Dataset, ReadWrite)}
      * and {@link #end()}. The rest is up to you...
      *
-     * This variant will pass the resulting {@link JenaTransaction} instance to the function (e.g. to {@link #commit()})
+     * This variant will pass the resulting {@link JenaTransaction} instance to the function (e.g. to do
+     * {@link #commit()}s)
+     *
      * @param function the function to run inside transaction
      * @param d the dataset for the transaction
      * @param mode the transaction mode
      * @param <T> the type returned by this method
-     * @return whatever is returned by the {@link Callable} function
-     * @throws Exception If there is a problem running the function. Note: the transaction will always be {@link #end()}ed!
+     * @return whatever is returned by the {@link WithTransaction} function
      */
-    public static <T> T runWith(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) throws Exception {
+    public static <T> T runWith(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) {
         if (function != null) {
             JenaTransaction txn = JenaTransaction.begin(d, mode);
             try {
