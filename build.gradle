@@ -6,7 +6,7 @@ plugins {
 /* Java basics */
 apply plugin: 'java'
 group = 'com.asteroid.duck'
-version = '1.0.0'
+version = '0.0.3'
 description = 'Utility classes for working with Apache Jena'
 
 sourceCompatibility = 1.8
@@ -32,10 +32,21 @@ dependencies {
 
 /* Add ability to publish JARs to Maven (e.g. bintray) */
 apply plugin: 'maven-publish'
+
+/** Create a source JAR for maven */
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            
+            artifact sourceJar {
+                classifier "sources"
+            }
         }
     }
 }
@@ -55,7 +66,7 @@ bintray {
         licenses = ['MIT']
         vcsUrl = 'https://github.com/duckAsteroid/jena-utils.git' // < - EDIT ME
         version {
-            name = '1.0.0'
+            name = project.version
             released = new Date()
         }
     }

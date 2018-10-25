@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A re-entrant wrapper around Apache Jena's Transaction capability.
@@ -33,7 +34,7 @@ public abstract class JenaTransaction implements AutoCloseable {
          * @return some value to calling code
          * @throws Exception If anything bad happens
          */
-        V call(JenaTransaction txn);
+        V call(JenaTransaction txn) throws Exception;
     }
 
     /**
@@ -44,16 +45,8 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function
      */
-    public static <T> Optional<T> readWith(final Callable<T> function, final Dataset d) {
-        return runWith(txn -> {
-            try {
-                return Optional.ofNullable(function.call());
-            }
-            catch (Exception e) {
-                LOG.error("Unhandled error while executing transaction", e);
-            }
-            return Optional.empty();
-        }, d, ReadWrite.READ);
+    public static <T> T readWith(final Callable<T> function, final Dataset d) throws ExecutionException {
+        return runWith(txn -> function.call(), d, ReadWrite.READ);
     }
 
     /**
@@ -71,19 +64,13 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function (if it ran succesfully)
      */
-    public static <T> Optional<T> writeWith(final Callable<T> function, final Dataset d, final boolean commitAfter) {
+    public static <T> T writeWith(final Callable<T> function, final Dataset d, final boolean commitAfter) throws ExecutionException {
         return runWith(txn -> {
-            try {
                 T result = function.call();
                 if (commitAfter) {
                     txn.commit();
                 }
-                return Optional.ofNullable(result);
-            }
-            catch (Exception e) {
-                LOG.error("Unhandled error while executing transaction", e);
-            }
-            return Optional.empty();
+                return result;
         }, d, ReadWrite.WRITE);
     }
 
@@ -97,7 +84,7 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function (if there is no error)
      */
-    public static <T> Optional<T> writeWithCommit(final Callable<T> function, final Dataset d) {
+    public static <T> T writeWithCommit(final Callable<T> function, final Dataset d) throws ExecutionException {
         return writeWith(function, d, true);
     }
 
@@ -115,16 +102,32 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link WithTransaction} function
      */
-    public static <T> T runWith(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) {
+    public static <T> T runWith(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) throws ExecutionException {
         if (function != null) {
             JenaTransaction txn = JenaTransaction.begin(d, mode);
             try {
                 return function.call(txn);
+            } catch (Exception e) {
+                throw new ExecutionException("Error processing transactional request", e);
             } finally {
                 txn.end();
             }
         }
         return null;
+    }
+
+    public static <T> Optional<T> runWithUnchecked(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) {
+        if (function != null) {
+            JenaTransaction txn = JenaTransaction.begin(d, mode);
+            try {
+                return Optional.ofNullable(function.call(txn));
+            } catch (Exception e) {
+                LOG.error("Error in transaction", e);
+            } finally {
+                txn.end();
+            }
+        }
+        return Optional.empty();
     }
 
     /**
