@@ -169,13 +169,9 @@ public abstract class JenaTransaction implements AutoCloseable {
     }
 
     /**
-     * Commits immediatly to the Jena dataset (via it's transaction) - regardless of the level of nesting
-     * @throws JenaTransactionEndedException If the outermost Jena transaction is already {@link Dataset#end()}ed.
+     * Commit data to the transaction if this is the outermost, otherwise ignored
      */
-    public void commit() {
-        Concrete concrete = validateOuterTransaction();
-        concrete.dataset.commit();
-    }
+    public abstract void commit();
 
     /**
      * Aborts the transaction immediately via the Jena dataset (via it's transaction) - regardless of the level of nesting
@@ -230,6 +226,11 @@ public abstract class JenaTransaction implements AutoCloseable {
         public ReadWrite getMode() {
             return mode;
         }
+
+        @Override
+        public void commit() {
+            dataset.commit();
+        }
     }
 
     /**
@@ -248,6 +249,11 @@ public abstract class JenaTransaction implements AutoCloseable {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("End nested " + Thread.currentThread().getName());
             }
+        }
+
+        @Override
+        public void commit() {
+            LOG.trace("No commit");
         }
     }
 }

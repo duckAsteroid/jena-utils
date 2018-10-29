@@ -8,6 +8,7 @@ import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
 
@@ -62,7 +63,7 @@ public class JenaTransactionTest {
      * @throws Exception
      */
     @Test
-    public void runWith()  {
+    public void runWith() throws ExecutionException {
         Dataset dataset = Mockito.mock(Dataset.class);
         JenaTransaction.WithTransaction withTransaction = Mockito.mock(JenaTransaction.WithTransaction.class);
 
@@ -77,7 +78,7 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void runWithTransaction()  {
+    public void runWithTransaction() throws ExecutionException {
         Dataset dataset = Mockito.mock(Dataset.class);
         
         JenaTransaction.runWith(txn -> {
@@ -131,6 +132,7 @@ public class JenaTransactionTest {
             } finally {
                 inner.end();
             }
+            outermost.commit();
         } finally {
             outermost.end();
         }
@@ -139,7 +141,7 @@ public class JenaTransactionTest {
         Mockito.verify(dataset, once()).begin(ReadWrite.READ);
         Mockito.verify(dataset, once()).end();
         Mockito.verify(dataset, Mockito.never()).abort();
-        Mockito.verify(dataset, Mockito.times(2)).commit();
+        Mockito.verify(dataset, once()).commit();
     }
 
     @Test
@@ -199,14 +201,13 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void read() {
+    public void read() throws ExecutionException {
         Dataset dataset = Mockito.mock(Dataset.class);
         final String TEST_DATA = "This is a test";
 
-        Optional<String> result = JenaTransaction.readWith(() -> TEST_DATA, dataset);
+        String result = JenaTransaction.readWith(() -> TEST_DATA, dataset);
         assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(TEST_DATA, result.get());
+        assertEquals(TEST_DATA, result);
 
         // begin & end should only be called once...
         Mockito.verify(dataset, once()).begin(ReadWrite.READ);
@@ -216,14 +217,14 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void readNested() {
+    public void readNested() throws ExecutionException {
         Dataset dataset = Mockito.mock(Dataset.class);
         final String TEST_DATA = "This is a test";
 
-        Optional<String> result = JenaTransaction.readWith(() -> JenaTransaction.readWith(() -> TEST_DATA, dataset).get(), dataset);
+        String result = JenaTransaction.readWith(() -> JenaTransaction.readWith(() -> TEST_DATA, dataset), dataset);
         assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(TEST_DATA, result.get());
+
+        assertEquals(TEST_DATA, result);
 
         // begin & end should only be called once...
         Mockito.verify(dataset, once()).begin(ReadWrite.READ);
@@ -233,14 +234,13 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void write() {
+    public void write() throws ExecutionException {
         Dataset dataset = Mockito.mock(Dataset.class);
         final String TEST_DATA = "This is a test";
 
-        Optional<String> result = JenaTransaction.writeWithCommit(() -> TEST_DATA, dataset);
+        String result = JenaTransaction.writeWithCommit(() -> TEST_DATA, dataset);
         assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(TEST_DATA, result.get());
+        assertEquals(TEST_DATA, result);
 
         // begin & end should only be called once...
         Mockito.verify(dataset, once()).begin(ReadWrite.WRITE);
@@ -252,9 +252,15 @@ public class JenaTransactionTest {
     @Test
     public void badWrite() {
         Dataset dataset = Mockito.mock(Dataset.class);
-        Optional<String> result = JenaTransaction.writeWithCommit(() -> { throw new UnsupportedOperationException(); }, dataset);
-        assertNotNull(result);
-        assertFalse(result.isPresent());
+        try {
+            String result = JenaTransaction.writeWithCommit(() -> {
+                throw new UnsupportedOperationException();
+            }, dataset);
+            fail("Expected ExcecutionEx");
+        }
+        catch(ExecutionException e) {
+            // expected
+        }
 
         // begin & end should only be called once...
         Mockito.verify(dataset, once()).begin(ReadWrite.WRITE);
@@ -264,15 +270,14 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void writeWithNestedRead() {
+    public void writeWithNestedRead() throws ExecutionException {
         Dataset dataset = Mockito.mock(Dataset.class);
         final String TEST_DATA = "This is a test";
 
-        Optional<String> result = JenaTransaction.writeWithCommit(() ->
-            JenaTransaction.readWith(() -> TEST_DATA, dataset).get(), dataset);
+        String result = JenaTransaction.writeWithCommit(() ->
+            JenaTransaction.readWith(() -> TEST_DATA, dataset), dataset);
         assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(TEST_DATA, result.get());
+        assertEquals(TEST_DATA, result);
 
         // begin & end should only be called once...
         Mockito.verify(dataset, once()).begin(ReadWrite.WRITE);
