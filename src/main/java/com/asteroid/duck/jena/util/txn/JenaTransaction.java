@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A re-entrant wrapper around Apache Jena's Transaction capability.
@@ -24,20 +26,6 @@ public abstract class JenaTransaction implements AutoCloseable {
     private static ThreadLocal<Concrete> localHelper = new ThreadLocal<>();
 
     /**
-     * An interface (Lambda) that can be used to access the transaction for commits etc.
-     * @param <V> The type returned
-     */
-    public interface WithTransaction<V> {
-        /**
-         * A function called within a transaction
-         * @param txn the transaction
-         * @return some value to calling code
-         * @throws Exception If anything bad happens
-         */
-        V call(JenaTransaction txn) throws Exception;
-    }
-
-    /**
      * A helper method to run a {@link Callable} inside a {@link ReadWrite#READ} transaction. This method takes care of {@link #begin(Dataset, ReadWrite)}
      * and {@link #end()}. The rest is up to you...
      * @param function the function to run inside a {@link ReadWrite#READ} transaction
@@ -45,8 +33,8 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function
      */
-    public static <T> T readWith(final Callable<T> function, final Dataset d) throws ExecutionException {
-        return runWith(txn -> function.call(), d, ReadWrite.READ);
+    public static <T> T readWith(final Supplier<T> function, final Dataset d) {
+        return runWith(jenaTransaction -> function.get(), d, ReadWrite.READ);
     }
 
     /**
@@ -64,9 +52,9 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function (if it ran succesfully)
      */
-    public static <T> T writeWith(final Callable<T> function, final Dataset d, final boolean commitAfter) throws ExecutionException {
+    public static <T> T writeWith(final Supplier<T> function, final Dataset d, final boolean commitAfter) {
         return runWith(txn -> {
-                T result = function.call();
+                T result = function.get();
                 if (commitAfter) {
                     txn.commit();
                 }
@@ -84,12 +72,12 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param <T> the type returned by this method
      * @return whatever is returned by the {@link Callable} function (if there is no error)
      */
-    public static <T> T writeWithCommit(final Callable<T> function, final Dataset d) throws ExecutionException {
+    public static <T> T writeWithCommit(final Supplier<T> function, final Dataset d)  {
         return writeWith(function, d, true);
     }
 
     /**
-     * A helper method to run a {@link WithTransaction} function inside a transaction.
+     * A helper method to run a {@link Function} function inside a transaction.
      * This method takes care of {@link #begin(Dataset, ReadWrite)}
      * and {@link #end()}. The rest is up to you...
      *
@@ -100,34 +88,18 @@ public abstract class JenaTransaction implements AutoCloseable {
      * @param d the dataset for the transaction
      * @param mode the transaction mode
      * @param <T> the type returned by this method
-     * @return whatever is returned by the {@link WithTransaction} function
+     * @return whatever is returned by the {@link Function} function
      */
-    public static <T> T runWith(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) throws ExecutionException {
+    public static <T> T runWith(final Function<JenaTransaction, T> function, final Dataset d, final ReadWrite mode) {
         if (function != null) {
             JenaTransaction txn = JenaTransaction.begin(d, mode);
             try {
-                return function.call(txn);
-            } catch (Exception e) {
-                throw new ExecutionException("Error processing transactional request", e);
+                return function.apply(txn);
             } finally {
                 txn.end();
             }
         }
         return null;
-    }
-
-    public static <T> Optional<T> runWithUnchecked(final WithTransaction<T> function, final Dataset d, final ReadWrite mode) {
-        if (function != null) {
-            JenaTransaction txn = JenaTransaction.begin(d, mode);
-            try {
-                return Optional.ofNullable(function.call(txn));
-            } catch (Exception e) {
-                LOG.error("Error in transaction", e);
-            } finally {
-                txn.end();
-            }
-        }
-        return Optional.empty();
     }
 
     /**

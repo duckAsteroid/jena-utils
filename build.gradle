@@ -6,7 +6,7 @@ plugins {
 /* Java basics */
 apply plugin: 'java'
 group = 'com.asteroid.duck'
-version = '0.0.4'
+version = '0.0.5'
 description = 'Utility classes for working with Apache Jena'
 
 sourceCompatibility = 1.8

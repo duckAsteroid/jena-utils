@@ -7,8 +7,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
 
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -63,9 +63,9 @@ public class JenaTransactionTest {
      * @throws Exception
      */
     @Test
-    public void runWith() throws ExecutionException {
+    public void runWith()  {
         Dataset dataset = Mockito.mock(Dataset.class);
-        JenaTransaction.WithTransaction withTransaction = Mockito.mock(JenaTransaction.WithTransaction.class);
+        Function<JenaTransaction, Object> withTransaction = Mockito.mock(Function.class);
 
 
         JenaTransaction.runWith(withTransaction, dataset, ReadWrite.READ);
@@ -78,7 +78,7 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void runWithTransaction() throws ExecutionException {
+    public void runWithTransaction() {
         Dataset dataset = Mockito.mock(Dataset.class);
         
         JenaTransaction.runWith(txn -> {
@@ -256,9 +256,9 @@ public class JenaTransactionTest {
             String result = JenaTransaction.writeWithCommit(() -> {
                 throw new UnsupportedOperationException();
             }, dataset);
-            fail("Expected ExcecutionEx");
+            fail("Expected Ex");
         }
-        catch(ExecutionException e) {
+        catch(UnsupportedOperationException e) {
             // expected
         }
 
@@ -270,7 +270,7 @@ public class JenaTransactionTest {
     }
 
     @Test
-    public void writeWithNestedRead() throws ExecutionException {
+    public void writeWithNestedRead()  {
         Dataset dataset = Mockito.mock(Dataset.class);
         final String TEST_DATA = "This is a test";
 
