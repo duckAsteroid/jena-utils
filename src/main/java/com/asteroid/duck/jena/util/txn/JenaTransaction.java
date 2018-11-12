@@ -3,6 +3,8 @@ package com.asteroid.duck.jena.util.txn;
 
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.ReadWrite;
+import org.apache.jena.shared.JenaException;
+import org.apache.jena.sparql.JenaTransactionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +98,12 @@ public abstract class JenaTransaction implements AutoCloseable {
             try {
                 return function.apply(txn);
             } finally {
-                txn.end();
+                try {
+                    txn.end();
+                }
+                catch(JenaTransactionException e) {
+                    LOG.warn("Unable to end transaction", e);
+                }
             }
         }
         return null;
