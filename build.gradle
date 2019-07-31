@@ -6,13 +6,13 @@ plugins {
 /* Java basics */
 apply plugin: 'java'
 group = 'com.asteroid.duck'
-version = '0.0.5'
+version = '0.0.6'
 description = 'Utility classes for working with Apache Jena'
 
 sourceCompatibility = 1.8
 
 // workaround for sonarqube plugin issue in Gradle 4
-sourceSets.main.output.classesDir = new File(buildDir, "classes/main")
+//sourceSets.main.output.classesDir = new File(buildDir, "classes/main")
 
 repositories {
     mavenCentral()
@@ -21,8 +21,8 @@ repositories {
 
 dependencies {
     compile 'org.slf4j:slf4j-api:1.7.25'
-    compile 'org.apache.jena:jena-core:3.4.0'
-    compile 'org.apache.jena:jena-arq:3.4.0'
+    compile 'org.apache.jena:jena-core:3.12.0'
+    compile 'org.apache.jena:jena-arq:3.12.0'
 
     testCompile 'junit:junit:4.+'
     testCompile 'org.mockito:mockito-all:1.10.19'
