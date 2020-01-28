@@ -6,7 +6,7 @@ plugins {
 /* Java basics */
 apply plugin: 'java'
 group = 'com.asteroid.duck'
-version = '0.0.6'
+version = '0.0.7'
 description = 'Utility classes for working with Apache Jena'
 
 sourceCompatibility = 1.8
@@ -38,6 +38,22 @@ task sourceJar(type: Jar) {
     from sourceSets.main.allJava
 }
 
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.compileClasspath
+
+    options
+    {
+        setMemberLevel JavadocMemberLevel.PUBLIC
+        setAuthor true
+        source "8"
+        links "https://docs.oracle.com/javase/8/docs/api/", "https://jena.apache.org/documentation/javadoc/jena/"
+    }
+}
+
+task packageJavadoc(type: Jar) {
+    from javadoc
+}
 
 publishing {
     publications {
@@ -46,6 +62,9 @@ publishing {
             
             artifact sourceJar {
                 classifier "sources"
+            }
+            artifact packageJavadoc {
+                classifier "javadoc"
             }
         }
     }

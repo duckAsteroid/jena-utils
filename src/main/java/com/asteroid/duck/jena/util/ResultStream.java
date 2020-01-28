@@ -3,6 +3,7 @@
  */
 package com.asteroid.duck.jena.util;
 
+import com.asteroid.duck.jena.util.impl.TinyReadOnlyMap;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Literal;
@@ -11,10 +12,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -63,10 +61,10 @@ public class ResultStream {
     }
 
     /**
-     * Given a variable name and a result set produce a (non-parallel) stream abstract RDFNodes
+     * Given a variable name and a result set produce a (non-parallel) stream of abstract RDFNodes
      * @param resultSet the result set
-     * @param keyVariable the
-     * @return
+     * @param keyVariable the variable to extract from the result set
+     * @return a stream of RDF nodes
      */
     public static Stream<RDFNode> streamRawVariable(final ResultSet resultSet, final String keyVariable) {
         if (!resultSet.getResultVars().contains(keyVariable)) {
@@ -88,6 +86,33 @@ public class ResultStream {
         return StreamSupport.stream(spliterator, false);
     }
 
+    /**
+     * Given a ResultSet produce a (non-parallel) stream of {@link Map} instances containing the
+     * value of all variables in the query for each result.
+     * @param resultSet the result set
+     * @return a stream of maps corresponding to the results
+     */
+    public static Stream<Map<String, RDFNode>> streamRawVariables(final ResultSet resultSet) {
+        Iterator<Map<String, RDFNode>> iterator = new Iterator<Map<String, RDFNode>>() {
+            final List<String> keys = resultSet.getResultVars();
+            @Override
+            public boolean hasNext() {
+                return resultSet.hasNext();
+            }
 
-
+            @Override
+            public Map<String, RDFNode> next() {
+                QuerySolution solution = resultSet.next();
+                RDFNode[] values = new RDFNode[keys.size()];
+                for (int i = 0; i < keys.size(); i++) {
+                    String key = keys.get(i);
+                    RDFNode value = solution.get(key);
+                    values[i] = value;
+                }
+                return new TinyReadOnlyMap<String, RDFNode>(keys, Arrays.asList(values));
+            }
+        };
+        Spliterator<Map<String, RDFNode>> spliterator = Spliterators.spliteratorUnknownSize(iterator, 0);
+        return StreamSupport.stream(spliterator, false);
+    }
 }

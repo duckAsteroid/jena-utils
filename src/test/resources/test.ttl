@@ -1,0 +1,34 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix test: <http://example.org/test#> .
+
+test:Class a rdfs:Class .
+
+test:A a test:Class ;
+       rdfs:label "A" ;
+       test:path "A" ;
+       test:weight "0.0"^^xsd:double ;
+       test:child test:B, test:C .
+
+test:B a test:Class ;
+       rdfs:label "B" ;
+       test:path "A.B" ;
+       test:weight "1.0"^^xsd:double ;
+       test:child test:D, test:E .
+
+test:C a test:Class ;
+       rdfs:label "C" ;
+       test:path "A.C" ;
+       test:weight "1.0"^^xsd:double .
+
+test:D a test:Class ;
+       rdfs:label "D" ;
+       test:path "A.B.D" ;
+       test:weight "2.0"^^xsd:double .
+
+test:E a test:Class ;
+       rdfs:label "E" ;
+       test:path "A.B.E" ;
+       test:weight "2.0"^^xsd:double .

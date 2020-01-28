@@ -1,10 +1,29 @@
 jena-utils
 ===========
-Utility classes for working with Apache Jena
+Utility classes for working with Apache Jena:
+* A set of fluent helper classes for building SPARQL queries
+* A transaction helper class that supports nested transactions
+* Classes to help work with Java `Stream` APIs from Jena `StmtIterator` and `ResultSet`
+* Utilities to work with RDF LangStrings and Java `Locale`s
 
 Getting Started
 ---------------
-Stuff
+You need to include my bintray maven repository in your build.
+
+`https://dl.bintray.com/duck-asteroid/maven/`
+
+Then use the maven co-ordinates:
+
+```
+<dependency>
+    <groupId>com.asteroid.duck</groupId>
+    <artifactId>jena-utils</artifactId>
+    <version>0.0.7</version>
+</dependency>
+```
+
+or in gradle: `com.asteroid.duck:jena-utils:0.0.7`
+
 
 Download
 -----------

@@ -25,7 +25,7 @@ public interface Prefix {
 
     /**
      * Applies the PREFIX clause to the query.
-     * @param prefixes The prefixes to be applied to the query. See {@link Prefixes}.
+     * @param prefixes The prefixes to be applied to the query.
      * @return {@link PrefixState} - a state where only compatible clauses can be applied.
      */
     PrefixState withPrefixes(String ... prefixes);

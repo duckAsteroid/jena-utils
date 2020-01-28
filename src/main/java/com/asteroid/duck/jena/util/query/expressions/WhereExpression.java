@@ -152,7 +152,7 @@ public class WhereExpression {
      */
 
     /**
-     * The OPTIONAL clause within a {@link jena.utils.querybuilder.clauses.Where WHERE} clause.
+     * The OPTIONAL clause within a {@link Where WHERE} clause.
      * @param exp The expression included in the OPTIONAL.
      * @return The {@link WhereExpression}
      */
