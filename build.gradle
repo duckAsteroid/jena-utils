@@ -20,9 +20,9 @@ repositories {
 }
 
 dependencies {
-    compile 'org.slf4j:slf4j-api:1.7.25'
-    compile 'org.apache.jena:jena-core:3.13.0'
-    compile 'org.apache.jena:jena-arq:3.13.0'
+    compile 'org.slf4j:slf4j-api:1.7.30'
+    compile 'org.apache.jena:jena-core:3.14.0'
+    compile 'org.apache.jena:jena-arq:3.14.0'
 
     testCompile 'junit:junit:4.+'
     testCompile 'org.mockito:mockito-all:1.10.19'
