@@ -6,6 +6,7 @@ package com.asteroid.duck.jena.util;
 import com.asteroid.duck.jena.util.impl.TinyReadOnlyMap;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.ResultSetRewindable;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
@@ -93,26 +94,32 @@ public class ResultStream {
      * @return a stream of maps corresponding to the results
      */
     public static Stream<Map<String, RDFNode>> streamRawVariables(final ResultSet resultSet) {
-        Iterator<Map<String, RDFNode>> iterator = new Iterator<Map<String, RDFNode>>() {
-            final List<String> keys = resultSet.getResultVars();
-            @Override
-            public boolean hasNext() {
-                return resultSet.hasNext();
-            }
+        final List<String> keys = resultSet.getResultVars();
 
-            @Override
-            public Map<String, RDFNode> next() {
-                QuerySolution solution = resultSet.next();
-                RDFNode[] values = new RDFNode[keys.size()];
-                for (int i = 0; i < keys.size(); i++) {
-                    String key = keys.get(i);
-                    RDFNode value = solution.get(key);
-                    values[i] = value;
-                }
-                return new TinyReadOnlyMap<String, RDFNode>(keys, Arrays.asList(values));
+        return stream(resultSet).map(querySolution -> {
+            RDFNode[] values = new RDFNode[keys.size()];
+            for (int i = 0; i < keys.size(); i++) {
+                String key = keys.get(i);
+                RDFNode value = querySolution.get(key);
+                values[i] = value;
             }
-        };
-        Spliterator<Map<String, RDFNode>> spliterator = Spliterators.spliteratorUnknownSize(iterator, 0);
+            return new TinyReadOnlyMap<>(keys, Arrays.asList(values));
+        });
+    }
+
+    /**
+     * Convert a result set into a stream. If the result set is {@link ResultSetRewindable rewindable} then the size
+     * is offered as a hint to the spliterator.
+     * @param resultSet The result set to stream
+     * @return a stream of {@link QuerySolution}s
+     */
+    public static Stream<QuerySolution> stream(final ResultSet resultSet) {
+        Spliterator<QuerySolution> spliterator;
+        if(resultSet instanceof ResultSetRewindable) {
+            spliterator = Spliterators.spliterator(resultSet, ((ResultSetRewindable)resultSet).size(), 0);
+        } else {
+            spliterator = Spliterators.spliteratorUnknownSize(resultSet, 0);
+        }
         return StreamSupport.stream(spliterator, false);
     }
 }

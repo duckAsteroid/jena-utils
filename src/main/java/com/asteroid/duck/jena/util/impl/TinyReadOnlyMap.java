@@ -12,6 +12,13 @@ public class TinyReadOnlyMap<K,V> implements Map<K,V> {
     private final List<K> keys;
     private final List<V> values;
 
+    /**
+     * Create the tiny map with an array of keys and values.
+     * NOTE: The constructor does not enforce uniquness ({@link Set} semantics) in the keys. First result wins.
+     * @see #get(Object)
+     * @param keys
+     * @param values
+     */
     public TinyReadOnlyMap(K[] keys, V[] values) {
         if (keys.length != values.length)
             throw new IllegalArgumentException("Keys and values cannot be different lengths");
@@ -28,7 +35,7 @@ public class TinyReadOnlyMap<K,V> implements Map<K,V> {
 
     @Override
     public int size() {
-        return keys.size();
+        return keySet().size();
     }
 
     @Override
@@ -46,9 +53,16 @@ public class TinyReadOnlyMap<K,V> implements Map<K,V> {
         return values.contains(value);
     }
 
+    /**
+     * Performs a simple linear search ({@link List#indexOf(Object)} for a given key
+     * @param key the key to access the corresponding value
+     * @return the value
+     */
     @Override
     public V get(Object key) {
-        return values.get(keys.indexOf(key));
+        int index = keys.indexOf(key);
+        if (index < 0) return null;
+        return values.get(index);
     }
 
     @Override
@@ -73,7 +87,7 @@ public class TinyReadOnlyMap<K,V> implements Map<K,V> {
 
     @Override
     public Set<K> keySet() {
-        return new HashSet<>(keys);
+        return Collections.unmodifiableSet(new HashSet<>(keys));
     }
 
     @Override
@@ -83,46 +97,65 @@ public class TinyReadOnlyMap<K,V> implements Map<K,V> {
 
     @Override
     public Set<Entry<K, V>> entrySet() {
-        return new AbstractSet<Entry<K, V>>() {
+        return Collections.unmodifiableSet(new AbstractSet<Entry<K, V>>() {
             @Override
             public Iterator<Entry<K, V>> iterator() {
-                return new Iterator<Entry<K, V>>() {
-                    int i = 0;
-
-                    @Override
-                    public boolean hasNext() {
-                        return i < size();
-                    }
-
-                    @Override
-                    public Entry<K, V> next() {
-                        final K key = keys.get(i);
-                        final V value = values.get(i);
-                        i++;
-                        return new Entry<K, V>() {
-                            @Override
-                            public K getKey() {
-                                return key;
-                            }
-
-                            @Override
-                            public V getValue() {
-                                return value;
-                            }
-
-                            @Override
-                            public V setValue(V value) {
-                                throw new UnsupportedOperationException("Read only");
-                            }
-                        };
-                    }
-                };
+                return new EntryIterator(keySet().iterator());
             }
 
             @Override
             public int size() {
-                return keys.size();
+                return TinyReadOnlyMap.this.size();
             }
-        };
+        });
+    }
+
+    private class EntryIterator implements Iterator<Entry<K, V>> {
+        private final Iterator<K> keyIterator;
+
+        private EntryIterator(Iterator<K> keyIterator) {
+            this.keyIterator = keyIterator;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return keyIterator.hasNext();
+        }
+
+        @Override
+        public Entry<K, V> next() {
+            final K key = keyIterator.next();
+            final V value = get(key);
+            return new Entry<K, V>() {
+                @Override
+                public K getKey() {
+                    return key;
+                }
+
+                @Override
+                public V getValue() {
+                    return value;
+                }
+
+                @Override
+                public V setValue(V value) {
+                    throw new UnsupportedOperationException("Read only");
+                }
+            };
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        Iterator<Entry<K, V>> iterator = entrySet().iterator();
+        while(iterator.hasNext()) {
+            Entry<K, V> entry = iterator.next();
+            sb.append(entry.getKey()).append('=').append(entry.getValue());
+            if (iterator.hasNext()) {
+                sb.append(',');
+            }
+        }
+        return sb.toString();
     }
 }
